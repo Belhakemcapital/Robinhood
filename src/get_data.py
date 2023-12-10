@@ -300,8 +300,8 @@ def get_data():
     trading_pairs = get_trading_pairs(info)
 
     # Get coinmetrics_data
-    file_path_metrics = 'data/static/metrics.txt'
-    file_path_assets = 'data/statis/assets.txt'
+    file_path_metrics = '../data/static/metrics.txt'
+    file_path_assets = '../data/statis/assets.txt'
     days_before_today = 3
     coinmetrics_data = (
         get_coinmetrics_data(
