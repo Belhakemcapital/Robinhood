@@ -1,24 +1,18 @@
-from os import environ
-import sys
-import pandas as pd
-import numpy as np
-import logging
-from datetime import date, datetime, timedelta
-from coinmetrics.api_client import CoinMetricsClient
 import json
 import logging
-from typing import List, Dict
+import sys
+from datetime import date, datetime, timedelta
 from os import environ
-import pandas as pd
-from coinmetrics.api.client import CoinMetricsClient
-from datetime import datetime, timedelta
-from typing import List
-import pandas as pd
-from typing import List
+from typing import List, Dict
+
+import numpy as np
 import pandas as pd
 from binance.client import Client
-import datetime
+from coinmetrics.api_client import CoinMetricsClient
 
+##########################################################################
+#########################    BINANCE DATA   ##############################
+##########################################################################
 def get_metrics_names() -> List[str]:
     """
     Read metric names from a file and return them as a list.
@@ -68,7 +62,7 @@ def get_asset_names()-> List[str]:
     Exception: If an error occurs while reading the file.
     """
     # Specify the file path
-    file_path = 'input_data/metrics.txt'
+    file_path = 'input_data/assets.txt'
 
      # Initialize an empty list to store asset names
     asset_names = []
@@ -91,8 +85,6 @@ def get_asset_names()-> List[str]:
 
     # Return the list of asset names
     return asset_names
-
-
 
 
 def configure_logger() -> None:
@@ -168,9 +160,6 @@ def fetch_asset_metrics(
 
     return metrics_data
 
-
-
-
 def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
     """
     Fetch asset metrics data from CoinMetrics.
@@ -203,9 +192,9 @@ def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
     metrics_data = fetch_asset_metrics(coin_metrics_client, assets, metrics, start_time, frequency)
 
     return metrics_data
-
-
-
+##########################################################################
+#########################    BINANCE DATA   ##############################
+##########################################################################
 def read_api_keys(file_path: str = 'ID/test.txt') -> tuple:
     """
     Read API keys from a text file.
