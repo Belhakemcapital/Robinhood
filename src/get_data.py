@@ -300,8 +300,8 @@ def get_data():
     trading_pairs = get_trading_pairs(info)
 
     # Get coinmetrics_data
-    file_path_metrics = 'data/static/metrics.txt'
-    file_path_assets = 'data/statis/assets.txt'
+    file_path_metrics = '../data/static/metrics.txt'
+    file_path_assets = '../data/statis/assets.txt'
     days_before_today = 3
     coinmetrics_data = (
         get_coinmetrics_data(
@@ -314,5 +314,5 @@ def get_data():
     # Get binance data
     binance_data = fetch_all_candlestick_data(client, trading_pairs)
     all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index(['dateTime','ticker'])
-    all_data.to_parquet('./data/all_data.parquet')
+    all_data.to_parquet('../data/all_data.parquet')
     return all_data
