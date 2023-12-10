@@ -3,3 +3,6 @@ envs/**
 
 # Draft files
 notebooks_draft/**
+
+# pycache files
+src/**/__pycache__/

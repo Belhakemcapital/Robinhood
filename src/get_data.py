@@ -1,25 +1,19 @@
-from os import environ
-import sys
-import pandas as pd
-import numpy as np
-import logging
-from datetime import date, datetime, timedelta
-from coinmetrics.api_client import CoinMetricsClient
 import json
 import logging
-from typing import List, Dict
+import sys
+from datetime import date, datetime, timedelta
 from os import environ
-import pandas as pd
-from coinmetrics.api.client import CoinMetricsClient
-from datetime import datetime, timedelta
-from typing import List
-import pandas as pd
-from typing import List
+from typing import List, Dict
+
+import numpy as np
 import pandas as pd
 from binance.client import Client
-import datetime
+from coinmetrics.api_client import CoinMetricsClient
 
-def get_metrics_names() -> List[str]:
+##########################################################################
+#########################    BINANCE DATA   ##############################
+##########################################################################
+def get_metrics_names(file_path: str) -> List[str]:
     """
     Read metric names from a file and return them as a list.
 
@@ -30,9 +24,6 @@ def get_metrics_names() -> List[str]:
     FileNotFoundError: If the specified file is not found.
     Exception: If an error occurs while reading the file.
     """
-    # Specify the file path
-    file_path = 'input_data/metrics.txt'
-
     # Initialize an empty list to store metric names
     metric_names = []
 
@@ -56,7 +47,7 @@ def get_metrics_names() -> List[str]:
     return metric_names
 
 
-def get_asset_names()-> List[str]:
+def get_asset_names(file_path: str)-> List[str]:
     """
     Read metric names from a file and return them as a list.
 
@@ -67,10 +58,7 @@ def get_asset_names()-> List[str]:
     FileNotFoundError: If the specified file is not found.
     Exception: If an error occurs while reading the file.
     """
-    # Specify the file path
-    file_path = 'input_data/metrics.txt'
-
-     # Initialize an empty list to store asset names
+    # Initialize an empty list to store asset names
     asset_names = []
 
     try:
@@ -91,8 +79,6 @@ def get_asset_names()-> List[str]:
 
     # Return the list of asset names
     return asset_names
-
-
 
 
 def configure_logger() -> None:
@@ -168,10 +154,10 @@ def fetch_asset_metrics(
 
     return metrics_data
 
-
-
-
-def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
+def get_coinmetrics_data(
+        days_before_today: int,
+        file_path_metrics: str,
+        file_path_assets: str) -> pd.DataFrame:
     """
     Fetch asset metrics data from CoinMetrics.
 
@@ -190,8 +176,8 @@ def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
     coin_metrics_client = initialize_coin_metrics_client()
 
     # Retrieve asset names and metrics
-    assets = get_asset_names()
-    metrics = get_metrics_names()
+    assets = get_asset_names(file_path_assets)
+    metrics = get_metrics_names(file_path_metrics)
 
     # Calculate the start time (3 days before today)
     start_time = (datetime.now() - timedelta(days=days_before_today)).strftime('%Y-%m-%d')
@@ -203,9 +189,9 @@ def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
     metrics_data = fetch_asset_metrics(coin_metrics_client, assets, metrics, start_time, frequency)
 
     return metrics_data
-
-
-
+##########################################################################
+#########################    BINANCE DATA   ##############################
+##########################################################################
 def read_api_keys(file_path: str = 'ID/test.txt') -> tuple:
     """
     Read API keys from a text file.
@@ -302,7 +288,7 @@ def fetch_all_candlestick_data(client: Client, trading_pairs: List[str]) -> pd.D
     return all_data
 
 
-def main():
+def get_data():
     # Read API keys from the file
     api_key, api_secret = read_api_keys()
 
@@ -312,8 +298,20 @@ def main():
     # Get trading pairs information
     info = pd.DataFrame.from_dict(client.get_exchange_info()['symbols']).set_index('symbol')
     trading_pairs = get_trading_pairs(info)
-    
-    coinmetrics_data = get_coinmetrics_data().rename(columns={'time':'dateTime','asset':'ticker'})
+
+    # Get coinmetrics_data
+    file_path_metrics = 'data/static/metrics.txt'
+    file_path_assets = 'data/statis/assets.txt'
+    days_before_today = 3
+    coinmetrics_data = (
+        get_coinmetrics_data(
+            days_before_today,
+            file_path_metrics,
+            file_path_assets
+        )
+        .rename(columns={'time':'dateTime','asset':'ticker'})
+    )
+    # Get binance data
     binance_data = fetch_all_candlestick_data(client, trading_pairs)
     all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index(['dateTime','ticker'])
     all_data.to_parquet('./data/all_data.parquet')
