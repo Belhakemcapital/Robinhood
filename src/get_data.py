@@ -314,5 +314,5 @@ def get_data():
     # Get binance data
     binance_data = fetch_all_candlestick_data(client, trading_pairs)
     all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index(['dateTime','ticker'])
-    all_data.to_parquet('./data/all_data.parquet')
+    all_data.to_parquet('../data/all_data.parquet')
     return all_data
