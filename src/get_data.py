@@ -14,6 +14,10 @@ from coinmetrics.api.client import CoinMetricsClient
 from datetime import datetime, timedelta
 from typing import List
 import pandas as pd
+from typing import List
+import pandas as pd
+from binance.client import Client
+import datetime
 
 def get_metrics_names() -> List[str]:
     """
@@ -200,3 +204,117 @@ def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
 
     return metrics_data
 
+
+
+def read_api_keys(file_path: str = 'ID/test.txt') -> tuple:
+    """
+    Read API keys from a text file.
+
+    Parameters:
+    file_path (str): The file path to the text file containing API keys.
+
+    Returns:
+    Tuple[str, str]: A tuple containing API key and API secret.
+    """
+    with open(file_path) as f:
+        lines = f.readlines()
+
+    api_key = lines[0][0:-1]
+    api_secret = lines[1][0:-1]
+    return api_key, api_secret
+
+def get_trading_pairs(info: pd.DataFrame) -> List[str]:
+    """
+    Retrieves a list of trading pairs involving the BUSD (Binance USD) quote asset that are currently open for trading.
+
+    Parameters:
+    info (pd.DataFrame): A DataFrame containing information about available trading pairs.
+
+    Returns:
+    List[str]: A list of trading pair symbols involving the BUSD quote asset that are currently open for trading.
+    """
+    ticker_usdt = []
+    for c in info['symbols']:
+        if c['quoteAsset'] == 'USDT' and c['status'] == "TRADING" and 'MARGIN' in c['permissions']:
+            ticker_usdt.append(c['symbol'])
+    return ticker_usdt
+
+def fetch_candlestick_data(client: Client, symbol: str, interval: str, days_back: int = 2000) -> pd.DataFrame:
+    """
+    Fetch historical candlestick data for a given trading pair.
+
+    Parameters:
+    client (Client): An instance of the Binance Client.
+    symbol (str): The trading pair symbol.
+    interval (str): The candlestick interval (e.g., '1day', '1hour').
+    days_back (int): Number of days back to fetch historical data (default is 2000).
+
+    Returns:
+    pd.DataFrame: A DataFrame containing historical candlestick data.
+    """
+    since_this_date = datetime.datetime.now() - datetime.timedelta(days=days_back)
+    until_this_date = datetime.datetime.now()
+    candle = client.futures_historical_klines(symbol, interval, str(since_this_date), str(until_this_date))
+    
+    # Create a dataframe to label all the columns returned by Binance for later use
+    columns_hist = ['dateTime', 'open', 'high', 'low', 'close', 'volume', 'closeTime',
+                    'quoteAssetVolume', 'numberOfTrades', 'takerBuyBaseVol', 'takerBuyQuoteVol', 'ignore']
+    
+    df = pd.DataFrame(candle, columns=columns_hist)
+    df['dateTime'] = pd.to_datetime(df['dateTime'], unit='ms')
+    df['closeTime'] = pd.to_datetime(df['closeTime'], unit='ms')
+    df['ticker'] = symbol
+    
+    # Convert data types for proper analysis
+    df = df.astype({
+        'open': 'float64',
+        'high': 'float64',
+        'low': 'float64',
+        'close': 'float64',
+        'volume': 'float64',
+        'quoteAssetVolume': 'float64',
+        'numberOfTrades': 'int64',
+        'takerBuyBaseVol': 'float64',
+        'takerBuyQuoteVol': 'float64',
+        'ticker': 'str'
+    })
+    
+    return df
+
+
+def fetch_all_candlestick_data(client: Client, trading_pairs: List[str]) -> pd.DataFrame:
+    """
+    Fetch historical candlestick data for all trading pairs and concatenate the results.
+
+    Parameters:
+    client (Client): An instance of the Binance Client.
+    trading_pairs (List[str]): A list of trading pair symbols.
+
+    Returns:
+    pd.DataFrame: A DataFrame containing concatenated historical candlestick data for all trading pairs.
+    """
+    all_data = pd.DataFrame()
+    
+    for symbol in trading_pairs:
+        candlestick_data = fetch_candlestick_data(client, symbol, Client.KLINE_INTERVAL_1DAY)
+        all_data = pd.concat([all_data, candlestick_data], ignore_index=True)
+    
+    return all_data
+
+
+def main():
+    # Read API keys from the file
+    api_key, api_secret = read_api_keys()
+
+    # Initialize Binance client
+    client = Client(api_key, api_secret)
+
+    # Get trading pairs information
+    info = pd.DataFrame.from_dict(client.get_exchange_info()['symbols']).set_index('symbol')
+    trading_pairs = get_trading_pairs(info)
+    
+    coinmetrics_data = get_coinmetrics_data().rename(columns={'time':'dateTime','asset':'ticker'})
+    binance_data = fetch_all_candlestick_data(client, trading_pairs)
+    all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index('dateTime')
+    all_data.to_parquet('./data/all_data.parquet')
+    return all_data
