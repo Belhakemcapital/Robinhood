@@ -57,7 +57,7 @@ def get_metrics_names() -> List[str]:
 
 
 def get_asset_names()-> List[str]:
-     """
+    """
     Read metric names from a file and return them as a list.
 
     Returns:
@@ -70,7 +70,7 @@ def get_asset_names()-> List[str]:
     # Specify the file path
     file_path = 'input_data/metrics.txt'
 
-    # Initialize an empty list to store asset names
+     # Initialize an empty list to store asset names
     asset_names = []
 
     try:
@@ -187,11 +187,11 @@ def get_coinmetrics_data(days_before_today: int = 3) -> pd.DataFrame:
     """
     # Configure logger and initialize CoinMetricsClient
     configure_logger()
-    coin_metrics_client = initialize_coin_metrics_client(api_key)
+    coin_metrics_client = initialize_coin_metrics_client()
 
     # Retrieve asset names and metrics
     assets = get_asset_names()
-    metrics = get_asset_metrics()
+    metrics = get_metrics_names()
 
     # Calculate the start time (3 days before today)
     start_time = (datetime.now() - timedelta(days=days_before_today)).strftime('%Y-%m-%d')
@@ -278,7 +278,7 @@ def fetch_candlestick_data(client: Client, symbol: str, interval: str, days_back
         'takerBuyQuoteVol': 'float64',
         'ticker': 'str'
     })
-    
+    df = df[['dateTime','ticker','close']]
     return df
 
 
@@ -315,6 +315,6 @@ def main():
     
     coinmetrics_data = get_coinmetrics_data().rename(columns={'time':'dateTime','asset':'ticker'})
     binance_data = fetch_all_candlestick_data(client, trading_pairs)
-    all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index('dateTime')
+    all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index(['dateTime','ticker'])
     all_data.to_parquet('./data/all_data.parquet')
     return all_data
