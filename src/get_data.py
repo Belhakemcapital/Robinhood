@@ -180,7 +180,7 @@ def get_coinmetrics_data(
     metrics = get_metrics_names(file_path_metrics)
 
     # Calculate the start time (3 days before today)
-    start_time = (datetime.now() - timedelta(days=days_before_today)).strftime('%Y-%m-%d')
+    start_time = (datetime.datetime.now() - timedelta(days=days_before_today)).strftime('%Y-%m-%d')
 
     # Set the data fetching frequency
     frequency = '1d'
@@ -296,7 +296,8 @@ def get_data():
     client = Client(api_key, api_secret)
 
     # Get trading pairs information
-    info = pd.DataFrame.from_dict(client.get_exchange_info()['symbols']).set_index('symbol')
+    info = pd.DataFrame.from_dict(client.get_exchange_info()['symbols'])
+    print(info)
     trading_pairs = get_trading_pairs(info)
 
     # Get coinmetrics_data
