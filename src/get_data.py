@@ -192,7 +192,7 @@ def get_coinmetrics_data(
 ##########################################################################
 #########################    BINANCE DATA   ##############################
 ##########################################################################
-def read_api_keys(file_path: str = 'ID/test.txt') -> tuple:
+def read_api_keys(file_path: str = 'src/ID/test.txt') -> tuple:
     """
     Read API keys from a text file.
 
@@ -204,7 +204,7 @@ def read_api_keys(file_path: str = 'ID/test.txt') -> tuple:
     """
     with open(file_path) as f:
         lines = f.readlines()
-
+    
     api_key = lines[0][0:-1]
     api_secret = lines[1][0:-1]
     return api_key, api_secret
@@ -225,7 +225,7 @@ def get_trading_pairs(info: pd.DataFrame) -> List[str]:
             ticker_usdt.append(c['symbol'])
     return ticker_usdt
 
-def fetch_candlestick_data(client: Client, symbol: str, interval: str, days_back: int = 2000) -> pd.DataFrame:
+def fetch_candlestick_data(client: Client, symbol: str, interval: str, days_back: int = 5000) -> pd.DataFrame:
     """
     Fetch historical candlestick data for a given trading pair.
 
@@ -238,8 +238,8 @@ def fetch_candlestick_data(client: Client, symbol: str, interval: str, days_back
     Returns:
     pd.DataFrame: A DataFrame containing historical candlestick data.
     """
-    since_this_date = datetime.datetime.now() - datetime.timedelta(days=days_back)
-    until_this_date = datetime.datetime.now()
+    since_this_date = datetime.now() - timedelta(days=days_back)
+    until_this_date = datetime.now()
     candle = client.futures_historical_klines(symbol, interval, str(since_this_date), str(until_this_date))
     
     # Create a dataframe to label all the columns returned by Binance for later use
@@ -287,6 +287,27 @@ def fetch_all_candlestick_data(client: Client, trading_pairs: List[str]) -> pd.D
     
     return all_data
 
+def get_binance_data(pairs: List[str])-> pd.DataFrame:
+      # Read API keys from the file
+    api_key, api_secret = read_api_keys()
+
+    # Initialize Binance client
+    client = Client(api_key, api_secret)
+
+    # Get trading pairs information
+    info = pd.DataFrame.from_dict(client.get_exchange_info()['symbols'])
+    if len(pairs) >0 :
+         # Get binance data
+        binance_data = fetch_all_candlestick_data(client, pairs)
+
+    else:
+        trading_pairs = get_trading_pairs(info)
+         # Get binance data
+        binance_data = fetch_all_candlestick_data(client, trading_pairs)
+
+   
+    
+    return binance_data
 
 def get_data():
     # Read API keys from the file
@@ -317,3 +338,34 @@ def get_data():
     all_data = coinmetrics_data.merge(binance_data, how='inner',on=['dateTime','ticker']).set_index(['dateTime','ticker'])
     all_data.to_parquet('../data/all_data.parquet')
     return all_data
+
+
+
+import os
+
+def print_directory_tree(folder_path=None,indent=""):
+    """
+    Print the directory tree starting from the specified folder_path.
+    """
+    # Get the current script's directory
+    if folder_path == None:
+        folder_path = os.path.dirname(os.path.realpath(__file__))
+
+    if os.path.exists(folder_path):
+        print(indent + os.path.basename(folder_path) + "/")
+
+        # List all files and subdirectories in the current directory
+        entries = os.listdir(folder_path)
+        entries.sort()
+
+        # Iterate over each entry
+        for entry in entries:
+            entry_path = os.path.join(folder_path, entry)
+
+            # Recursively print the directory tree for subdirectories
+            if os.path.isdir(entry_path):
+                print_directory_tree(entry_path, indent + "  ")
+            else:
+                print(indent + "  " + entry)
+
+
