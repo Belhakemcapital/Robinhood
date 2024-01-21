@@ -6,3 +6,8 @@ notebooks_draft/**
 
 # pycache files
 src/**/__pycache__/
+
+# Data files
+data/dynamic/eth_dump.csv
+data/dynamic/eth_coinmetrics_20150730_20240121.csv
+data/static/attributes_description.xlsx
