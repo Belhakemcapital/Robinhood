@@ -11,7 +11,7 @@ from binance.client import Client
 from coinmetrics.api_client import CoinMetricsClient
 
 ##########################################################################
-#########################    BINANCE DATA   ##############################
+#####################    COINMETRICS DATA   ##############################
 ##########################################################################
 def get_metrics_names(file_path: str) -> List[str]:
     """
