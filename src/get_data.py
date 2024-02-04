@@ -192,7 +192,7 @@ def get_coinmetrics_data(
 ##########################################################################
 #########################    BINANCE DATA   ##############################
 ##########################################################################
-def read_api_keys(file_path: str = 'src/ID/test.txt') -> tuple:
+def read_api_keys(file_path: str = 'data/static/ID/test.txt') -> tuple:
     """
     Read API keys from a text file.
 
